@@ -1,46 +1,82 @@
-package com.example.recyclerview_diffutil.model
+package ua.cn.stu.recyclerview.model
 
+import com.example.recyclerview_diffutil.model.User
 import com.github.javafaker.Faker
 import java.util.*
+import kotlin.collections.ArrayList
 
-class UserService {
+// get updated list of users
+typealias UsersListener = (users: List<User>) -> Unit
 
-    private val users = mutableListOf<User>()
+class UsersService {
+
+    private var users = mutableListOf<User>()
+    // collect all listeners
+    private val listeners = mutableSetOf<UsersListener>()
 
     init {
-        val faker: Faker = Faker.instance()
-        // перемешиваем список
+        val faker = Faker.instance()
         IMAGES.shuffle()
-        val generatedUsers: List<User> = (1..100).map { User(
+        users = (1..100).map { User(
             id = it.toLong(),
             name = faker.name().name(),
             company = faker.company().name(),
             photo = IMAGES[it % IMAGES.size]
-        )}
+        ) }.toMutableList()
     }
 
-    fun getUser(): List<User> {
+    fun getUsers(): List<User> {
         return users
     }
 
-    fun deleteUser(user: User){
-        val indexToDelete: Int = users.indexOfFirst{it.id == user.id }
-        if(indexToDelete != -1)
+    fun fireUser(user: User){
+        val index = users.indexOfFirst { it.id == user.id }
+        if(index == -1) return
+        // create copy of data class with empty company
+        val updatedUser = users[index].copy(company = "")
+        // create tow "immutable" list
+        users = ArrayList(users)
+        users[index] = updatedUser
+        notifyChanges()
+    }
+
+    fun deleteUser(user: User) {
+        val indexToDelete = users.indexOfFirst { it.id == user.id }
+        if (indexToDelete != -1) {
+            // creating list for DiffUtils ( oldList)
+            users = ArrayList(users)
+            // change list (newList)
             users.removeAt(indexToDelete)
+            notifyChanges()
+        }
     }
 
-    fun moveUser(user: User, move: Int){
+    fun moveUser(user: User, moveBy: Int) {
         val oldIndex = users.indexOfFirst { it.id == user.id }
-        // chek correct index input
-        if(oldIndex == -1) return
-        val newIndex = oldIndex + move
-        // chek outOfList
+        if (oldIndex == -1) return
+        val newIndex = oldIndex + moveBy
         if (newIndex < 0 || newIndex >= users.size) return
-        // swapping places
+        users = ArrayList(users)
         Collections.swap(users, oldIndex, newIndex)
+        notifyChanges()
     }
 
-    companion object{
+    fun addListener(listener: UsersListener) {
+        listeners.add(listener)
+        // get list for new listener
+        listener.invoke(users)
+    }
+
+    fun removeListener(listener: UsersListener) {
+        listeners.remove(listener)
+    }
+
+    private fun notifyChanges() {
+        // get all listeners list of Users
+        listeners.forEach { it.invoke(users) }
+    }
+
+    companion object {
         private val IMAGES = mutableListOf(
             "https://images.unsplash.com/photo-1600267185393-e158a98703de?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NjQ0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800",
             "https://images.unsplash.com/photo-1579710039144-85d6bdffddc9?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0Njk1&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800",
