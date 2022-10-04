@@ -27,7 +27,7 @@ class UserDiffCallback(
     private val oldList: List<User>,
     private val newList: List<User>
 ) : DiffUtil.Callback(){
-    /* listen what new in list */
+    /* listen what new in list to redraw */
     override fun getOldListSize(): Int = oldList.size
 
     override fun getNewListSize(): Int = newList.size

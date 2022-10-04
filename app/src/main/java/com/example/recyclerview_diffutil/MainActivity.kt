@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         usersService.addListener(usersListener)
     }
 
+    // disconnect listener for list
     override fun onDestroy() {
         super.onDestroy()
         usersService.removeListener(usersListener)
